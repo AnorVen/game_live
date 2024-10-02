@@ -1,5 +1,5 @@
 class LiveGame {
-	constructor(rowsInput, colsInput) {
+	constructor(rowsInput, colsInput, startBtn, stopBtn, setParamsBtn, setRandomStartBtn) {
 		this.rowsInput = rowsInput;
 		this.colsInput = colsInput;
 		this.gameInProcess = false;
@@ -8,9 +8,19 @@ class LiveGame {
 		this.gameWrapper = document.querySelector('.game');
 		this.maxCount = this.rowCount * this.colCount;
 		this.position = null;
+		this.startBtn = startBtn;
+		this.stopBtn = stopBtn;
+		this.setParamsBtn = setParamsBtn;
+		this.setRandomStartBtn = setRandomStartBtn;
 	}
 
 	startGame = () => {
+		this.startBtn.disabled = true;
+		this.stopBtn.disabled = false;
+		this.rowsInput.disabled = true;
+		this.colsInput.disabled = true;
+		this.setParamsBtn.disabled = true;
+		this.setRandomStartBtn.disabled = true;
 		console.log('startGame');
 		this.gameInProcess = true;
 		this.checkFirstPosition();
@@ -18,56 +28,100 @@ class LiveGame {
 	};
 
 	nextStep = () => {
-
 		this.newPosition();
+		console.log(this.position);
+		console.log([...this.position.values()].filter(item => item));
+		if ([...this.position.values()].filter(item => item).length) {
+			setTimeout(this.nextStep, 2000)
+		} else {
+			this.stopGame();
+		}
 	};
 
 	checkFirstPosition = () => {
-		if (this.position){
+		if (this.position) {
 			this.position = null;
 		}
+		this.position = new Map();
 		let temp = [];
 		document.querySelectorAll('.active').forEach(item => {
-			temp.push([item.classList.value.match(/\d+/g)[0], true]);
+			temp.push(parseInt(item.classList.value.match(/\d+/g)[0]));
 		});
-		for(let i = 1; i < this.maxCount; i++){
-			this.position.set(i, false)
+		for (let i = 1; i < this.maxCount; i++) {
+			this.position.set(i, false);
 		}
-		for(let i =0; i< temp.length; i++){
-			this.position.set(temp[i], true)
+		for (let i = 0; i < temp.length; i++) {
+			this.position.set(temp[i], true);
 		}
+
+		console.log(this.position);
 	};
 
 	newPosition = () => {
-		for (let i = 1; i < this.maxCount; i++) {
-			this.checkItsAlive(this.position[i]);
+		for (let [number, isAlive] of this.position.entries()) {
+			this.checkItsAlive(number, isAlive);
 		}
+
+		const listOfActive = []
+		for (let [number, isAlive] of this.position.entries()) {
+			if (isAlive){
+				listOfActive.push(number)
+			}
+		}
+
+		console.log(listOfActive);
+		document.querySelectorAll('.active').forEach(item =>{
+			item.classList.remove('active')
+		})
+
+		for(let i = 0; i< listOfActive.length; i++){
+			console.log(document.querySelector(`.element_${listOfActive[i]}`));
+			document.querySelector(`.element_${listOfActive[i]}`).classList.add('active')
+		}
+
 	};
 
-	checkItsAlive = (item) => {
-		const numOfCol = Math.round(item / this.colCount)
+	checkItsAlive = (number, isAlive) => {
+		const numOfCol = Math.round(number / this.colCount);
 		const startOfCol = numOfCol * this.colCount;
 		const endOfCol = (numOfCol + 1) * this.colCount - 1;
-		const position = item % numOfCol;
+		const position = number % numOfCol;
 
-		const temp1 = item - 1 < startOfCol ?  endOfCol :  item - 1;
-		const temp2 = item + 1 > endOfCol ? startOfCol: item + 1;
-
-		const temp3 = (item + this.colCount) > this.maxCount ? position : item + this.colCount;
-
-		const temp4 = item + this.colCount - 1 > this.maxCount
+		const temp1 = number - 1 < startOfCol ? endOfCol : number - 1;
+		const temp2 = number + 1 > endOfCol ? startOfCol : number + 1;
+		const temp3 = (number + this.colCount) > this.maxCount ? position : number + this.colCount;
+		const temp4 = number + this.colCount - 1 > this.maxCount
 			? position - 1
-			: item + this.colCount - 1 < startOfCol + this.colCount
-				?
-				: item + this.colCount - 1
+			: number + this.colCount - 1 < startOfCol + this.colCount
+				? endOfCol + this.colCount
+				: number + this.colCount - 1
 		;
 
-		const temp5 = item + this.colCount + 1;
+		const temp5 = number + this.colCount + 1 > this.maxCount
+			? position + 1
+			: number + this.colCount + 1 > endOfCol + this.colCount
+				? startOfCol + this.colCount
+				: number + this.colCount + 1;
 
-		const temp6 = item - this.colCount;
-		const temp7 = item - this.colCount - 1;
-		const temp8 = item - this.colCount + 1;
+		const temp6 = number - this.colCount < 0 ?
+			this.rowCount * (this.colCount - 1) + number
+			: number - this.colCount;
 
+		const temp7 =
+			number - this.colCount + 1 < 0
+				? this.rowCount * (this.colCount - 1) + position + 1 > this.maxCount
+					? this.rowCount * (this.colCount - 1)
+					: number - this.colCount + 1
+
+				: number - this.colCount + 1;
+
+
+		const temp8 =
+			number - this.colCount - 1 < 0
+				? this.rowCount * (this.colCount - 1) + position - 1 > this.maxCount - this.colCount
+					? this.rowCount * (this.colCount)
+					: number - this.colCount + 1
+				: number - this.colCount - 1;
 		const neighbours = [
 			temp1,
 			temp2,
@@ -78,18 +132,44 @@ class LiveGame {
 			temp7,
 			temp8,
 		];
+		let neighboursLen = 0;
+		if (isAlive) {
+			for (let i = 0; i < neighbours.length; i++) {
+				if (this.position.get(neighbours[i])) {
+					neighboursLen++;
+				}
+			}
+			if (
+				neighboursLen > 3 ||
+				neighboursLen < 2
+			) {
+				this.position.set(number, true);
 
-		let tempLength = this.position.filter(pos => neighbours.includes(pos)).length;
-		if (
-			tempLength > 3 ||
-			tempLength < 2
-		) {
-			return false;
+			} else {
+				this.position.set(number, false);
+			}
+		} else {
+			for (let i = 0; i < neighbours.length; i++) {
+				if (this.position.get(neighbours[i])) {
+					neighboursLen++;
+				}
+			}
+			if (neighboursLen === 3) {
+				this.position.set(number, true);
+
+			} else {
+				this.position.set(number, false);
+			}
 		}
-		return true;
 	};
 
 	stopGame = () => {
+		this.startBtn.disabled = false;
+		this.stopBtn.disabled = true;
+		this.rowsInput.disabled = false;
+		this.colsInput.disabled = false;
+		this.setParamsBtn.disabled = false;
+		this.setRandomStartBtn.disabled = false;
 		console.log('stopGame');
 		this.gameInProcess = false;
 		this.position = null;
@@ -102,7 +182,8 @@ class LiveGame {
 			const tr = document.createElement('tr');
 			for (let j = 0; j < this.colCount; j++) {
 				const td = document.createElement('td');
-				td.classList.add('element');
+				td.classList.add(`element_${j + 1}`);
+				td.classList.add(`element`);
 				td.classList.add(`${i * this.rowCount + j + 1}`);
 				tr.appendChild(td);
 			}
@@ -145,39 +226,25 @@ function start() {
 	const setRandomStartBtn = document.querySelector('#setRandomStart');
 	const rowsInput = document.querySelector('#rows');
 	const colsInput = document.querySelector('#cols');
-	const game = new LiveGame(rowsInput, colsInput);
+	const game = new LiveGame(rowsInput, colsInput, startBtn, stopBtn, setParamsBtn, setRandomStartBtn);
 	game.init();
 
 
 	setParamsBtn.addEventListener('click', () => {
 		game.restart();
-
 	});
 
 	startBtn.addEventListener('click', () => {
-		startBtn.disabled = true;
-		stopBtn.disabled = false;
-		rowsInput.disabled = true;
-		colsInput.disabled = true;
-		setParamsBtn.disabled = true;
-		setRandomStartBtn.disabled = true;
 		game.startGame();
-
 	});
 	stopBtn.addEventListener('click', () => {
-		startBtn.disabled = false;
-		stopBtn.disabled = true;
-		rowsInput.disabled = false;
-		colsInput.disabled = false;
-		setParamsBtn.disabled = false;
-		setRandomStartBtn.disabled = false;
 		game.stopGame();
 	});
 
 }
 
 
-window.addEventListener('load', function (event) {
+window.addEventListener('load',  (event) => {
 	console.log('All resources finished loading!');
 	start();
 });
