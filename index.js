@@ -82,14 +82,25 @@ class LiveGame {
 	};
 
 	checkItsAlive = (number, isAlive) => {
-		const numOfCol = Math.round(number / this.colCount);
-		const startOfCol = numOfCol * this.colCount;
-		const endOfCol = (numOfCol + 1) * this.colCount - 1;
-		const position = number % numOfCol;
+		const numOfCol = Math.round(number / this.colCount) + 1;
+		const startOfCol = (numOfCol) * this.colCount - this.colCount + 1;
+		const endOfCol = numOfCol * this.colCount;
+		const position = number % numOfCol + 1;
 
-		const temp1 = number - 1 < startOfCol ? endOfCol : number - 1;
-		const temp2 = number + 1 > endOfCol ? startOfCol : number + 1;
-		const temp3 = (number + this.colCount) > this.maxCount ? position : number + this.colCount;
+
+
+
+		const temp1 = number - 1 < startOfCol
+			? endOfCol
+			: number - 1;
+		const temp2 = number + 1 > endOfCol
+			? startOfCol
+			: number + 1;
+
+
+		const temp3 = (number + this.colCount) > this.maxCount ?
+			position :
+			number + this.colCount;
 		const temp4 = number + this.colCount - 1 > this.maxCount
 			? position - 1
 			: number + this.colCount - 1 < startOfCol + this.colCount
@@ -132,6 +143,20 @@ class LiveGame {
 			temp7,
 			temp8,
 		];
+		if (number < 2){
+			console.log('numOfCol',numOfCol);
+			console.log('startOfCol',startOfCol);
+			console.log('endOfCol',endOfCol);
+			console.log('position',position);
+
+			console.log('this.colCount', this.colCount);
+			console.log('this.', this.rowCount);
+
+			console.log(number);
+			console.log( neighbours);
+
+		}
+
 		let neighboursLen = 0;
 		if (isAlive) {
 			for (let i = 0; i < neighbours.length; i++) {
