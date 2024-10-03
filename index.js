@@ -14,6 +14,7 @@ class LiveGame {
 		this.setRandomStartBtn = setRandomStartBtn;
 
 		this.canvas = null;
+		this.context = null
 
 		this.setParamsBtn.addEventListener('click', () => {
 			this.restart();
@@ -38,6 +39,7 @@ class LiveGame {
 		canvas.style.border = '1px solid black'
 		this.canvas = canvas;
 		this.gameWrapper.appendChild(this.canvas);
+		this.context = this.canvas.getContext('2d');
 		this.addListener();
 	};
 
@@ -57,7 +59,16 @@ class LiveGame {
 
 
 	draftPosition = () =>{
-		this.canvas
+		for (let [number, isAlive] of this.position.entries()) {
+			let coordinates = number.split(',')
+			if (isAlive){
+				this.context.fillStyle = "rgb(200,0,0)";
+			}else {
+				this.context.fillStyle = "rgb(0,0,0)";
+			}
+			this.context.fillRect(coordinates[0], coordinates[1], 1, 1);
+		}
+
 	}
 	nextStep = () => {
 		this.draftPosition()
@@ -192,17 +203,17 @@ class LiveGame {
 	};
 
 
-	mousedownEventHandler = (context, draw, mouse, e) => {
+	mousedownEventHandler = (draw, mouse, e) => {
 		let ClientRect = this.canvas.getBoundingClientRect();
 		mouse.x = e.clientX - ClientRect.left;
 		mouse.y = e.clientY - ClientRect.top;
 
 		draw = true;
-		context.beginPath();
-		context.moveTo(mouse.x, mouse.y);
+		this.context.beginPath();
+		this.context.moveTo(mouse.x, mouse.y);
 	};
 
-	mousemoveEventHandler = (context, draw, mouse, e) => {
+	mousemoveEventHandler = (draw, mouse, e) => {
 
 		if (draw === true) {
 			let ClientRect = this.getBoundingClientRect();
@@ -210,50 +221,49 @@ class LiveGame {
 			mouse.x = e.clientX - ClientRect.left;
 			mouse.y = e.clientY - ClientRect.top;
 
-			context.lineTo(mouse.x, mouse.y);
-			context.stroke();
+			this.context.lineTo(mouse.x, mouse.y);
+			this.context.stroke();
 		}
 	};
 
-	mouseupEventHandler = (context, draw, mouse, e) => {
+	mouseupEventHandler = (draw, mouse, e) => {
 		let ClientRect = this.canvas.getBoundingClientRect();
 		mouse.x = e.clientX - ClientRect.left;
 		mouse.y = e.clientY - ClientRect.top;
-		context.lineTo(mouse.x, mouse.y);
-		context.stroke();
-		context.closePath();
+		this.context.lineTo(mouse.x, mouse.y);
+		this.context.stroke();
+		this.context.closePath();
 		draw = false;
 	};
 
 	addListener = () => {
-		const context = this.canvas.getContext('2d');
 		let draw = false;
 		let mouse = { x: 0, y: 0 };
 
 		this.canvas.addEventListener('mousedown',
-			(e) => this.mousedownEventHandler(context, draw, mouse, e),
+			(e) => this.mousedownEventHandler( draw, mouse, e),
 		);
 
 		this.canvas.addEventListener('mousemove',
-			(e) => this.mousemoveEventHandler(context, draw, mouse, e),
+			(e) => this.mousemoveEventHandler(draw, mouse, e),
 		);
 
 		this.canvas.addEventListener('mouseup',
-			(e) => this.mouseupEventHandler(context, draw, mouse, e),
+			(e) => this.mouseupEventHandler(draw, mouse, e),
 		);
 	};
 
 	restart = () => {
 		this.canvas.removeEventListener('mousedown',
-			(context, draw, mouse, e) => this.mousedownEventHandler(context, draw, mouse, e),
+			(e) => this.mousedownEventHandler(draw, mouse, e),
 		);
 
 		this.canvas.removeEventListener('mousemove',
-			(context, draw, mouse, e) => this.mousemoveEventHandler(context, draw, mouse, e),
+			(draw, mouse, e) => this.mousemoveEventHandler(draw, mouse, e),
 		);
 
 		this.canvas.removeEventListener('mouseup',
-			(context, draw, mouse, e) => this.mouseupEventHandler(context, draw, mouse, e),
+			(draw, mouse, e) => this.mouseupEventHandler(draw, mouse, e),
 		);
 		this.gameWrapper.removeChild(this.canvas);
 		this.rowCount = this.rowsInput.value;
