@@ -7,11 +7,13 @@ class LiveGame {
 		this.colCount = colsInput.value;
 		this.gameWrapper = document.querySelector('.game');
 		this.maxCount = this.rowCount * this.colCount;
-		this.position = null;
+		this.position = new Map;
 		this.startBtn = startBtn;
 		this.stopBtn = stopBtn;
 		this.setParamsBtn = setParamsBtn;
 		this.setRandomStartBtn = setRandomStartBtn;
+
+		this.canvas = null;
 
 		this.setParamsBtn.addEventListener('click', () => {
 			this.restart();
@@ -30,21 +32,12 @@ class LiveGame {
 	}
 
 	init = () => {
-		const table = document.createElement('table');
-		const tbody = document.createElement('tbody');
-		for (let i = 0; i < this.rowCount; i++) {
-			const tr = document.createElement('tr');
-			for (let j = 0; j < this.colCount; j++) {
-				const td = document.createElement('td');
-				td.classList.add(`element_${i * this.rowCount + j + 1}`);
-				td.classList.add(`element`);
-				td.classList.add(`${i * this.rowCount + j + 1}`);
-				tr.appendChild(td);
-			}
-			tbody.appendChild(tr);
-		}
-		table.appendChild(tbody);
-		this.gameWrapper.appendChild(table);
+		const canvas = document.createElement('canvas');
+		canvas.style.width = `${this.colCount}px`;
+		canvas.style.height = `${this.rowCount}px`;
+		canvas.style.border = '1px solid black'
+		this.canvas = canvas;
+		this.gameWrapper.appendChild(this.canvas);
 		this.addListener();
 	};
 
@@ -59,34 +52,20 @@ class LiveGame {
 		console.log('startGame');
 
 		this.gameInProcess = true;
-		this.checkFirstPosition();
 		this.nextStep();
 	};
 
 
+	draftPosition = () =>{
+		this.canvas
+	}
 	nextStep = () => {
+		this.draftPosition()
 		this.newPosition();
 		if ([...this.position.values()].filter(item => item).length) {
 			setTimeout(this.nextStep, 1000);
 		} else {
 			this.stopGame();
-		}
-	};
-
-	checkFirstPosition = () => {
-		if (this.position) {
-			this.position = null;
-		}
-		this.position = new Map();
-		let temp = [];
-		document.querySelectorAll('.active').forEach(item => {
-			temp.push(parseInt(item.classList.value.match(/\d+/g)[0]));
-		});
-		for (let i = 1; i < this.maxCount; i++) {
-			this.position.set(i, false);
-		}
-		for (let i = 0; i < temp.length; i++) {
-			this.position.set(temp[i], true);
 		}
 	};
 
@@ -213,25 +192,75 @@ class LiveGame {
 	};
 
 
-	clickForCel = ({ target }) => {
-		if (this.gameInProcess) return;
-		if (target.classList.contains('element')) {
-			target.classList.toggle('active');
+	mousedownEventHandler = (context, draw, mouse, e) => {
+		let ClientRect = this.canvas.getBoundingClientRect();
+		mouse.x = e.clientX - ClientRect.left;
+		mouse.y = e.clientY - ClientRect.top;
+
+		draw = true;
+		context.beginPath();
+		context.moveTo(mouse.x, mouse.y);
+	};
+
+	mousemoveEventHandler = (context, draw, mouse, e) => {
+
+		if (draw === true) {
+			let ClientRect = this.getBoundingClientRect();
+
+			mouse.x = e.clientX - ClientRect.left;
+			mouse.y = e.clientY - ClientRect.top;
+
+			context.lineTo(mouse.x, mouse.y);
+			context.stroke();
 		}
 	};
 
+	mouseupEventHandler = (context, draw, mouse, e) => {
+		let ClientRect = this.canvas.getBoundingClientRect();
+		mouse.x = e.clientX - ClientRect.left;
+		mouse.y = e.clientY - ClientRect.top;
+		context.lineTo(mouse.x, mouse.y);
+		context.stroke();
+		context.closePath();
+		draw = false;
+	};
 
 	addListener = () => {
-		document.querySelector('table').addEventListener('click', this.clickForCel);
+		const context = this.canvas.getContext('2d');
+		let draw = false;
+		let mouse = { x: 0, y: 0 };
+
+		this.canvas.addEventListener('mousedown',
+			(e) => this.mousedownEventHandler(context, draw, mouse, e),
+		);
+
+		this.canvas.addEventListener('mousemove',
+			(e) => this.mousemoveEventHandler(context, draw, mouse, e),
+		);
+
+		this.canvas.addEventListener('mouseup',
+			(e) => this.mouseupEventHandler(context, draw, mouse, e),
+		);
 	};
 
 	restart = () => {
-		const gameTable = document.querySelector('table');
-		gameTable.removeEventListener('click', this.clickForCel);
-		this.gameWrapper.removeChild(gameTable);
+		this.canvas.removeEventListener('mousedown',
+			(context, draw, mouse, e) => this.mousedownEventHandler(context, draw, mouse, e),
+		);
+
+		this.canvas.removeEventListener('mousemove',
+			(context, draw, mouse, e) => this.mousemoveEventHandler(context, draw, mouse, e),
+		);
+
+		this.canvas.removeEventListener('mouseup',
+			(context, draw, mouse, e) => this.mouseupEventHandler(context, draw, mouse, e),
+		);
+		this.gameWrapper.removeChild(this.canvas);
 		this.rowCount = this.rowsInput.value;
 		this.colCount = this.colsInput.value;
 		this.maxCount = this.rowCount * this.maxCount;
+		this.canvas = null;
+		this.position = new Map
 		this.init();
 	};
 
@@ -260,7 +289,6 @@ function start() {
 	const colsInput = document.querySelector('#cols');
 	const game = new LiveGame(rowsInput, colsInput, startBtn, stopBtn, setParamsBtn, setRandomStartBtn);
 	game.init();
-
 }
 
 
